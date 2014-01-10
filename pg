@@ -119,6 +119,8 @@ def main():
             
     # not aligned in (256*8 - 32) bit
     send_packet(pgd, rbcp, ip_address)
+    
+    data_file.close()
 
 if __name__ == '__main__':
     main()
