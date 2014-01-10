@@ -27,8 +27,8 @@ class PatternGeneratorData:
                 raise ValueError, 'Invaild Char %s' % (i)
         self.ascii_data.append(line)
 
-    def get_n_ascii_data(self):
-        return len(self.ascii_data)
+#    def get_n_ascii_data(self):
+#        return len(self.ascii_data)
     
     def get_bit_len_ascii_data(self):
         bit_len = 0
