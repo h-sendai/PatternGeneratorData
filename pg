@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import time
+from optparse import OptionParser
+import PatternGeneratorData
+import SitcpRbcp
+import socket
+
+# XXX: global variable for options
+options      = {}
+cmdline_args = []
+
+def process_options():
+    global options
+    global cmdline_args
+    global parser
+
+    parser = OptionParser(usage = 'usage: %prog [options] datafile ip_address', version = '%prog 1.0')
+
+    # -d, --debug
+    parser.add_option('-d', '--debug',
+                      action = 'store_true',
+                      dest   = 'debug',
+                      help   = 'show debug message')
+    parser.set_defaults(debug = False)
+
+    # -s, --sleep
+    parser.add_option('-s', '--sleep',
+                      action = 'store',
+                      type   = 'int',
+                      dest   = 'sleep_u_sec_between_packet',
+                      help   = 'sleep micro seconds between sending packet')
+    parser.set_defaults(sleep_u_sec_between_packet = 0)
+
+    # -v, --verbose
+    parser.add_option('-v', '--verbose',
+                      action = 'store_true',
+                      dest   = 'verbose',
+                      help   = 'print verbose message')
+    parser.set_defaults(verbose = False)
+
+    (options, cmdline_args) = parser.parse_args()
+
+def print_options_and_args():
+    # don't need "global options" to read global variable
+    print 'option dump:', options
+
+    if len(cmdline_args) > 0:
+        print 'cmdline_args:', cmdline_args
+
+def is_busy(rbcp, ip_address):
+    """FIFO full bit.  Return True if full"""
+    fifo_full_address = 0x08
+    b = ord(rbcp.read_registers(ip_address, fifo_full_address, 1))
+    if (b & 0x80) == 0x80:
+        return True
+    
+    return False
+
+def send_packet(p, rbcp, ip_address):
+
+    #print 'try to send: %d' % (p.get_bit_len_ascii_data())
+    if options.debug:
+        p.set_debug()
+    packet_data = p.get_binary_to_send()
+
+    if options.debug:
+        sys.stdout.write('dump packet data part to stderr\n')
+        sys.stderr.write(packet_data)
+
+    while is_busy(rbcp, ip_address):
+        time.sleep(0.0001)
+
+    try:
+        rbcp.write_registers(ip_address, address = 0x200, length = len(packet_data), id = 1, data = packet_data)
+    except socket.error, e:
+        sys.exit(e)
+    except Exception, e:
+        sys.exit(e)
+
+def main():
+    process_options()
+    if options.verbose:
+        print_options_and_args()
+    
+    if len(cmdline_args) != 2:
+        parser.print_usage()
+        sys.exit(1)
+
+    try:
+        data_file = open(cmdline_args[0], 'r')
+    except IOError, e:
+        sys.exit(e)
+    
+    ip_address = cmdline_args[1]
+    if options.debug:
+        print ip_address
+
+    pgd = PatternGeneratorData.PatternGeneratorData()
+    rbcp = SitcpRbcp.SitcpRbcp()
+
+    for line_num, line in enumerate(data_file, 1): # 1: line number start with 1
+        line = line.partition('#')[0]
+        line = line.strip()
+        if line == '':
+            continue
+        else:
+            try:
+                pgd.accumurate_ascii_data(line)
+            except ValueError, e:
+                # ascii data line has invalid char.
+                sys.stderr.write('In line: %d %s ' % (line_num, line))
+                sys.exit(e)
+        if pgd.get_bit_len_ascii_data() == (256*8 - 32): # We cannot send 256 bytes and more at once
+            send_packet(pgd, rbcp, ip_address)
+            pgd.clear_ascii_data()
+            
+    # not aligned in (256*8 - 32) bit
+    send_packet(pgd, rbcp, ip_address)
+
+if __name__ == '__main__':
+    main()

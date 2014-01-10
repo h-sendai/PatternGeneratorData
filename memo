@@ -1,0 +1,6 @@
+class pg_data:
+# self.data
+# accumulate() or push_back()
+# get_data_len()
+# send_packet()
+# clear_buf()
