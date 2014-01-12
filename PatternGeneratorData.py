@@ -13,6 +13,7 @@ class PatternGeneratorData:
         self.debug = False
         self.ascii_data = []
         self.binary_data = []
+        self.bit_len = 0
 
     def set_debug(self):
         self.debug = True
@@ -26,15 +27,13 @@ class PatternGeneratorData:
             if i != 'H' and i != 'L':
                 raise ValueError, 'Invaild Char %s' % (i)
         self.ascii_data.append(line)
+        self.bit_len += len(line)
 
 #    def get_n_ascii_data(self):
 #        return len(self.ascii_data)
     
     def get_bit_len_ascii_data(self):
-        bit_len = 0
-        for i in self.ascii_data:
-            bit_len += len(i)
-        return bit_len
+        return self.bit_len
 
     def print_ascii_data(self):
         for i in range(0, len(self.ascii_data)):
@@ -52,6 +51,7 @@ class PatternGeneratorData:
 
     def clear_ascii_data(self):
         del self.ascii_data[:]
+        self.bit_len = 0
 
     def get_binary_to_send(self):
         self._convert_ascii_to_binary()
