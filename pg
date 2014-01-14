@@ -32,7 +32,7 @@ def process_options():
                       action = 'store',
                       type   = 'int',
                       dest   = 'sleep_u_sec_between_packet',
-                      help   = 'sleep micro seconds between sending packet')
+                      help   = 'sleep micro seconds between sending packet (NOT YET IMPLEMENT)')
     parser.set_defaults(sleep_u_sec_between_packet = 0)
 
     # -v, --verbose
@@ -46,7 +46,7 @@ def process_options():
                       action = 'store',
                       type   = 'int',
                       dest   = 'pulsewidth',
-                      help   = 'specify pulsewidth')
+                      help   = 'specify pulsewidth (Value 1 correspond 20 ns)')
     parser.set_defaults(pulsewidth = 0)
 
     (options, cmdline_args) = parser.parse_args()
