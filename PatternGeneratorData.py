@@ -60,37 +60,32 @@ class PatternGeneratorData:
 
 def main():
     pgd = PatternGeneratorData()
+    if len(sys.argv) != 2:
+        print 'Usage: PatternGeneratorData.py filename'
+        sys.exit(1)
 
-    print '---'
     try:
-        pgd.accumurate_ascii_data('LLLL')
-    except ValueError, e:
+        f = open(sys.argv[1])
+    except IOError, e:
         sys.exit(e)
-    try:
-        pgd.accumurate_ascii_data('LLLH')
-    except ValueError, e:
-        sys.exit(e)
-    pgd.accumurate_ascii_data('LLHL')
-    pgd.accumurate_ascii_data('LLHH')
-    print 'accumurated', pgd.get_bit_len_ascii_data(), 'bit data'
+    
+    for line in f:
+        line = line.partition('#')[0]
+        line = line.strip()
+        if line == '':
+            continue
+
+        try:
+            pgd.accumurate_ascii_data(line)
+        except ValueError, e:
+            sys.exit(e)
+        print 'accumurated', pgd.get_bit_len_ascii_data(), 'bit data'
+
     pgd.print_ascii_data()
     packet_data = pgd.get_binary_to_send()
     print 'send', len(packet_data), 'bytes data'
     sys.stderr.write(packet_data)
     pgd.clear_ascii_data()
-
-    print '---'
-    pgd.accumurate_ascii_data('HLLL')
-    pgd.accumurate_ascii_data('HLLH')
-    pgd.accumurate_ascii_data('HLHL')
-    pgd.accumurate_ascii_data('HLHH')
-    print 'accumurated', pgd.get_bit_len_ascii_data(), 'bit data'
-    pgd.print_ascii_data()
-    packet_data = pgd.get_binary_to_send()
-    print 'send', len(packet_data), 'bytes data'
-    sys.stderr.write(packet_data)
-    pgd.clear_ascii_data()
-
 
 if __name__ == '__main__':
     main()
