@@ -7,6 +7,7 @@ from optparse import OptionParser
 import PatternGeneratorData
 import SitcpRbcp
 import socket
+import struct
 
 # XXX: global variable for options
 options      = {}
@@ -41,6 +42,13 @@ def process_options():
                       help   = 'print verbose message')
     parser.set_defaults(verbose = False)
 
+    parser.add_option('-p', '--pulsewidth',
+                      action = 'store',
+                      type   = 'int',
+                      dest   = 'pulsewidth',
+                      help   = 'specify pulsewidth')
+    parser.set_defaults(pulsewidth = 0)
+
     (options, cmdline_args) = parser.parse_args()
 
 def print_options_and_args():
@@ -57,6 +65,8 @@ def is_busy(rbcp, ip_address):
     if (b & 0x80) == 0x80:
         return True
     
+    if options.verbose:
+        sys.stderr.write('not busy\n')
     return False
 
 def send_packet(p, rbcp, ip_address):
@@ -71,13 +81,29 @@ def send_packet(p, rbcp, ip_address):
         sys.stderr.write(packet_data)
 
     while is_busy(rbcp, ip_address):
+        if options.verbose:
+            sys.stderr.write('busy!\n')
         time.sleep(0.0001)
 
     try:
-        rbcp.write_registers(ip_address, address = 0x200, length = len(packet_data), id = 1, data = packet_data)
+        rbcp.write_registers(ip_address, address = 0x200, 
+            length = len(packet_data), id = 1, data = packet_data)
     except socket.error, e:
         sys.exit(e)
     except Exception, e:
+        sys.exit(e)
+    
+    # send update packet
+    update_address = 0x08
+    update_data = struct.pack('>B', 0x01)
+    try:
+        rbcp.write_registers(ip_address, address = update_address,
+            length = len(update_data), id = 2, data = update_data)
+    except socket.error, e:
+        sys.stderr.write('update packet')
+        sys.exit(e)
+    except Exception, e:
+        sys.stderr.write('update packet')
         sys.exit(e)
 
 def main():
@@ -100,6 +126,23 @@ def main():
 
     pgd = PatternGeneratorData.PatternGeneratorData()
     rbcp = SitcpRbcp.SitcpRbcp()
+
+    # pulsewidth option
+    if options.pulsewidth > 0:
+        pulsewidth = options.pulsewidth
+        if pulsewidth > 255:
+            sys.stderr.write('pulsewidth too large: %d' % (pulsewidth))
+        pulsewidth_data = struct.pack('>B', pulsewidth)
+        pulsewidth_address = 0x0c
+        try:
+            rbcp.write_registers(ip_address, address = pulsewidth_address,
+                length = len(pulsewidth_data), id = 3, data = pulsewidth_data)
+        except socket.error, e:
+            sys.stderr.write('update packet')
+            sys.exit(e)
+        except Exception, e:
+            sys.stderr.write('update packet')
+            sys.exit(e)
 
     for line_num, line in enumerate(data_file, 1): # 1: line number start with 1
         line = line.partition('#')[0]
