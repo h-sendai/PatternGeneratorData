@@ -18,7 +18,7 @@ def process_options():
     global cmdline_args
     global parser
 
-    parser = OptionParser(usage = 'usage: %prog [options] datafile ip_address', version = '%prog 1.0')
+    parser = OptionParser(usage = 'usage: %prog [options] datafile ip_address', version = '%prog 1.1')
 
     # -d, --debug
     parser.add_option('-d', '--debug',
@@ -48,6 +48,13 @@ def process_options():
                       dest   = 'pulsewidth',
                       help   = 'specify pulsewidth (Value 1 correspond 20 ns)')
     parser.set_defaults(pulsewidth = 0)
+
+    # -F, --dont-verify-full
+    parser.add_option('-F', '--dont-verify-full',
+                      action = 'store_true',
+                      dest   = 'dont_verify_full',
+                      help   = 'do not verify buffer is full or not')
+    parser.set_defaults(dont_verify_full = False)
 
     (options, cmdline_args) = parser.parse_args()
 
@@ -80,10 +87,13 @@ def send_packet(p, rbcp, ip_address):
         sys.stdout.write('dump packet data part to stderr\n')
         sys.stderr.write(packet_data)
 
-    while is_busy(rbcp, ip_address):
-        if options.verbose:
-            sys.stderr.write('busy!\n')
-        time.sleep(0.0001)
+    if dont_verify_full:
+        pass
+    else:
+        while is_busy(rbcp, ip_address):
+            if options.verbose:
+                sys.stderr.write('busy!\n')
+            time.sleep(0.0001)
 
     try:
         rbcp.write_registers(ip_address, address = 0x200, 
