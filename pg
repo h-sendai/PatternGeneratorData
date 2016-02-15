@@ -87,7 +87,7 @@ def send_packet(p, rbcp, ip_address):
         sys.stdout.write('dump packet data part to stderr\n')
         sys.stderr.write(packet_data)
 
-    if dont_verify_full:
+    if options.dont_verify_full:
         pass
     else:
         while is_busy(rbcp, ip_address):
