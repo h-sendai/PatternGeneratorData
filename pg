@@ -170,8 +170,9 @@ def main():
             send_packet(pgd, rbcp, ip_address)
             pgd.clear_ascii_data()
             
-    # not aligned in (256*8 - 32) bit
-    send_packet(pgd, rbcp, ip_address)
+    if pgd.get_bit_len_ascii_data() != 0:
+        # we have remaining data not aligned in (256*8 -32) bits at the end of file
+        send_packet(pgd, rbcp, ip_address)
     
     data_file.close()
 
